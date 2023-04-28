@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Line Chart</title>
+        <meta name = "viewport" content = "initial-scale = 1, user-scalable = no">
+        <style></style>
+    </head>
+    <body>
+        
+        <div>
+            <canvas id="myChart" width="1500" height="200"></canvas>
+            <canvas id="myChart2" width="1500" height="200"></canvas>
+            <canvas id="myChart3" width="1500" height="200"></canvas>
+
+            <form action="/graph", method="post">
+                <button>Raw Data</button>
+            </form>
+            <form action="/postRpeaks", method="post">
+                <button>Wavelet Transform</button>
+            </form>
+            <form action="/postMLResult", method="post">
+                <button>ML Classification</button>
+            </form>
+        </div>
+        <p>Status: {{ status | safe }}</p>
+        {% if route == 'postMLResult' %}
+            <p>{{ status2 | safe }}</p>
+        {% endif %}
+        
+        <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
+        <script>
+
+        const multiArbitraryLine = {
+        id: 'multiArbitraryLine',
+            beforeDatasetsDraw(chart,args, pluginOptions){
+                const {ctx, chartArea: {top, bottom, left, right, width, height}, scales: {x,y}}=chart;
+                ctx.save();
+                ctx.strokeStyle ='gray';
+                ctx.lineWidth = 2;
+
+                function drawLines(xPos){
+                    ctx.beginPath();
+                    ctx.setLineDash([6,6]);
+                    ctx.moveTo(x.getPixelForValue(xPos), top);
+                    ctx.lineTo(x.getPixelForValue(xPos), bottom);
+                    ctx.stroke();
+                    ctx.closePath();
+                    ctx.restore();
+                    ctx.setLineDash([]);
+                }
+
+                pluginOptions.xPositions.forEach((xValue) => {
+                    drawLines(xValue)
+                })
+
+            }
+        }
+
+        const data1 = {
+            labels: {{ labels[0:3414] | safe }},
+            datasets: [
+                {
+                    label: 'ECG',
+                    data: {{ values[0:3414] | safe }},
+                    pointRadius: 0,
+                    borderWidth: 1,
+                    yAxisID: 'y',
+
+                },
+                {% if route == "postRpeaks" %}
+                {
+                    label: 'Data After Wavelet Transformation',
+                    data: {{ valuesR[0:3414] | safe }},
+                    pointRadius: 0,
+                    borderWidth: 1,
+                    yAxisID: 'y2',
+                }
+                {% endif %}
+                
+            ],
+        }
+
+        const data2 = {
+            labels: {{ labels[3414:6828] | safe }},
+            datasets: [
+                {
+                    label: 'ECG',
+                    data: {{ values[3414:6828] | safe }},
+                    pointRadius: 0,
+                    borderWidth: 1,
+                    yAxisID: 'y',
+
+                },
+                {% if route == 'postRpeaks' %}
+                {
+                    label: 'Data After Wavelet Transformation',
+                    data: {{ valuesR[3414:6828] | safe }},
+                    pointRadius: 0,
+                    borderWidth: 1,
+                    yAxisID: 'y2',
+                }
+                {% endif %}
+                
+            ],
+        }
+
+        const data3 = {
+            labels: {{ labels[6828:10240] | safe }},
+            datasets: [
+                {
+                    label: 'ECG',
+                    data: {{ values[6828:10240] | safe }},
+                    pointRadius: 0,
+                    borderWidth: 1,
+                    yAxisID: 'y',
+
+                },
+                {% if route == 'postRpeaks' %}
+                {
+                    label: 'Data After Wavelet Transformation',
+                    data: {{ valuesR[6828:10240] | safe }},
+                    pointRadius: 0,
+                    borderWidth: 1,
+                    yAxisID: 'y2',
+                }
+                {% endif %}
+                
+            ],
+        }
+
+        const config1 = {
+            type: 'line',
+            data: data1,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                {% if route == "postRpeaks" or "postMLResult" %}
+                plugins:{
+                    multiArbitraryLine:{
+                        xPositions: {{ Rpeaks | safe }},
+                    }
+                },
+                {% endif %}
+            },
+            {% if route == "postRpeaks" or "postMLResult" %}
+            plugins:[multiArbitraryLine]
+            {% endif %}
+        };
+        const config2 = {
+            type: 'line',
+            data: data2,
+            options: {
+                scales: {
+                y: {
+                    beginAtZero: true
+                }
+                },
+                {% if route == 'postRpeaks' or "postMLResult" %}
+                plugins:{
+                    multiArbitraryLine:{
+                        xPositions: {{ Rpeaks2 | safe }},
+                    }
+                },
+                {% endif %}
+            },
+            {% if route == 'postRpeaks' or "postMLResult" %}
+            plugins:[multiArbitraryLine]
+            {% endif %}
+        };
+
+        const config3 = {
+            type: 'line',
+            data: data3,
+            options: {
+                scales: {
+                y: {
+                    beginAtZero: true
+                }
+                },
+                {% if route == 'postRpeaks' or "postMLResult" %}
+                plugins:{
+                    multiArbitraryLine:{
+                        xPositions: {{ Rpeaks3 | safe }},
+                    }
+                },
+                {% endif %}
+            },
+            {% if route == 'postRpeaks' or "postMLResult" %}
+            plugins:[multiArbitraryLine]
+            {% endif %}
+                // plugins:{               
+                //     legend: {
+                //         display:false,
+                //     }
+                // }
+            
+        };
+
+
+        const myChart = new Chart(
+            document.getElementById('myChart'),
+            config1
+        );
+        const myChart2 = new Chart(
+            document.getElementById('myChart2'),
+            config2
+        );
+
+        const myChart3 = new Chart(
+            document.getElementById('myChart3'),
+            config3
+        );
+
+
+    // Instantly assign Chart.js version
+        const chartVersion = document.getElementById('chartVersion');
+        chartVersion.innerText = Chart.version;
+
+        /*const ctx = document.getElementById('myChart');
+        const ctx2 = document.getElementById('myChart2');
+        const ctx3 = document.getElementById('myChart3');
+        chart1 = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ labels[0:3414] | safe }},
+                datasets: [
+                    {
+                        label: 'ECG',
+                        data: {{ values[0:3414] | safe }},
+                        pointRadius: 0,
+                        borderWidth: 1,
+                        yAxisID: 'y1',
+
+                    },
+                    {% if route == 'postRpeaks' %}
+                    {
+                        label: 'Data After Wavelet Transformation',
+                        data: {{ valuesR[0:3414] | safe }},
+                        pointRadius: 0,
+                        borderWidth: 1,
+                        yAxisID: 'y2',
+                    }
+                    {% endif %}
+                
+            ],
+            },
+
+        options: {
+            scales: {
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                },
+                {% if route == 'postRpeaks' %}
+                y2: {
+                    beginAtZero: true,
+                    display: true,
+                    position: 'right',
+                }
+                {% endif %}
+                {% if route == 'postMLResult' %}
+                y2: {
+                    beginAtZero: true,
+                    display: true,
+                    position: 'right',
+                }
+                {% endif %}
+            }
+        },
+
+        plugins:[multiArbitraryLine]
+        });*/
+
+        /*
+        chart2 = new Chart(ctx2, {
+            type: 'line',
+            data: {
+            labels: {{ labels[3414:6828] | safe }},
+            datasets: [{
+                data: {{ values[3414:6828] | safe }},
+                pointRadius: 0,
+                borderWidth: 1
+            }]
+            },
+            options: {
+            plugins: {
+                legend: false // Hide legend
+            },
+            scales: {
+
+                y: {
+                beginAtZero: true
+                }
+            }
+            }
+        });
+
+        chart3 = new Chart(ctx3, {
+            type: 'line',
+            data: {
+            labels: {{ labels[6828:10240] | safe }},
+            datasets: [{
+                data: {{ values[6828:10240] | safe }},
+                pointRadius: 0,
+                borderWidth: 1
+            }]
+            },
+            options: {
+            plugins: {
+                legend: false // Hide legend
+            },
+            scales: {
+                y: {
+                beginAtZero: true
+                }
+            }
+            }
+        });*/
+        
+        </script>
+           
+
+    </body>
+</html>
